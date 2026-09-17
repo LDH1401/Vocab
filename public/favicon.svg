@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <defs>
+    <linearGradient id="vocab-green-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+    <filter id="green-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#059669" flood-opacity="0.35" />
+    </filter>
+  </defs>
+  <rect x="10" y="10" width="80" height="80" rx="24" fill="url(#vocab-green-grad)" filter="url(#green-shadow)" />
+  <path d="M30 35C30 35 37 32 50 38C63 32 70 35 70 35V67C70 67 63 64 50 70C37 64 30 67 30 67V35Z" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <line x1="50" y1="38" x2="50" y2="70" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round"/>
+  <circle cx="68" cy="30" r="5" fill="#a7f3d0" />
+</svg>
