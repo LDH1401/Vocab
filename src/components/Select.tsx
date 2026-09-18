@@ -28,6 +28,7 @@ export function Select<T extends string | number>({
   id,
   placeholder = 'Chọn…',
   disabled,
+  size = 'md',
   className,
   'aria-label': ariaLabel,
 }: {
@@ -37,6 +38,7 @@ export function Select<T extends string | number>({
   id?: string
   placeholder?: string
   disabled?: boolean
+  size?: 'md' | 'sm'
   /** Áp dụng cho nút, dùng để chỉnh độ rộng */
   className?: string
   'aria-label'?: string
@@ -180,7 +182,8 @@ export function Select<T extends string | number>({
         onKeyDown={onKeyDown}
         className={cn(
           fieldClass,
-          'flex h-11 cursor-pointer items-center gap-2 pr-3 pl-3.5 text-left text-sm',
+          'flex cursor-pointer items-center gap-2 text-left',
+          size === 'md' ? 'h-11 pr-3 pl-3.5 text-sm' : 'h-9 pr-2.5 pl-3 text-[13px]',
           open && 'border-accent ring-4 ring-accent/15',
           className,
         )}

@@ -12,12 +12,12 @@ import {
   Tags,
   X,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router'
+import { Pagination } from '../components/Pagination'
 import { SpeakButton } from '../components/SpeakButton'
 import {
   Badge,
-  Button,
   ButtonLink,
   Card,
   EmptyState,
@@ -37,7 +37,8 @@ import { wordStatus, type WordStatus } from '../lib/srs'
 import { foldText } from '../lib/text'
 import { State } from 'ts-fsrs'
 
-const PAGE_SIZE = 50
+const PAGE_SIZES = [20, 50, 100] as const
+const DEFAULT_PAGE_SIZE = 20
 
 type StatusFilter = 'all' | WordStatus
 type Sort = 'newest' | 'oldest' | 'az' | 'due' | 'lapses'
@@ -52,18 +53,32 @@ interface Row {
 export default function WordsPage() {
   const settings = useSettings()
   const [params, setParams] = useSearchParams()
-  const [limit, setLimit] = useState(PAGE_SIZE)
+  const listTopRef = useRef<HTMLDivElement>(null)
   const query = params.get('q') ?? ''
   const status = (params.get('status') ?? 'all') as StatusFilter
   const tag = params.get('tag') ?? ''
   const sort = (params.get('sort') ?? 'newest') as Sort
+  const perParam = Number(params.get('per'))
+  const pageSize = PAGE_SIZES.find((size) => size === perParam) ?? DEFAULT_PAGE_SIZE
+  const requestedPage = Math.max(1, Math.floor(Number(params.get('page'))) || 1)
 
+  /** Đổi bộ lọc, tìm kiếm hay số từ mỗi trang thì quay về trang 1 */
   const setParam = (key: string, value: string, fallback: string) => {
     const next = new URLSearchParams(params)
     if (value === fallback) next.delete(key)
     else next.set(key, value)
+    next.delete('page')
     setParams(next, { replace: true })
-    setLimit(PAGE_SIZE)
+  }
+
+  /** Mỗi lần chuyển trang là một mục trong lịch sử, nút Quay lại của trình duyệt về trang trước đó */
+  const goToPage = (page: number) => {
+    const next = new URLSearchParams(params)
+    if (page <= 1) next.delete('page')
+    else next.set('page', String(page))
+    setParams(next)
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    listTopRef.current?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' })
   }
 
   const data = useData()
@@ -106,6 +121,12 @@ export default function WordsPage() {
     }
     return result.sort(compare[sort])
   }, [rows, query, status, tag, sort])
+
+  // Trang trên URL có thể vượt quá số trang hiện có (vừa xóa từ, đổi bộ lọc) nên được kẹp lại
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const page = Math.min(requestedPage, pageCount)
+  const pageStart = (page - 1) * pageSize
+  const pageEnd = Math.min(filtered.length, pageStart + pageSize)
 
   const now = Date.now()
 
@@ -213,13 +234,30 @@ export default function WordsPage() {
               Thử từ khóa khác hoặc bỏ bớt bộ lọc.
             </EmptyState>
           ) : (
-            <div className="space-y-3">
-              <p className="px-1 text-xs font-medium text-muted">
-                Hiển thị {Math.min(limit, filtered.length)} / {filtered.length} từ
-              </p>
+            <div ref={listTopRef} className="scroll-mt-20 space-y-3">
+              <div className="flex items-center justify-between gap-3 px-1">
+                <p className="text-xs font-medium text-muted tabular-nums">
+                  {filtered.length > pageSize ? (
+                    <>
+                      Từ <span className="text-ink-2">{pageStart + 1}–{pageEnd}</span> trong {filtered.length} từ
+                    </>
+                  ) : (
+                    `${filtered.length} từ`
+                  )}
+                </p>
+                <div className="w-32 shrink-0">
+                  <Select
+                    size="sm"
+                    value={pageSize}
+                    onChange={(v) => setParam('per', String(v), String(DEFAULT_PAGE_SIZE))}
+                    aria-label="Số từ mỗi trang"
+                    options={PAGE_SIZES.map((size) => ({ value: size, label: `${size} / trang` }))}
+                  />
+                </div>
+              </div>
 
               <Card className="divide-y divide-line overflow-hidden">
-                {filtered.slice(0, limit).map((row) => (
+                {filtered.slice(pageStart, pageEnd).map((row) => (
                   <div
                     key={row.word.id}
                     className="group relative flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-surface-2/60 sm:px-5 sm:py-4"
@@ -265,13 +303,7 @@ export default function WordsPage() {
                 ))}
               </Card>
 
-              {filtered.length > limit && (
-                <div className="flex justify-center pt-2">
-                  <Button variant="secondary" onClick={() => setLimit((l) => l + PAGE_SIZE)}>
-                    Xem thêm {Math.min(PAGE_SIZE, filtered.length - limit)} từ
-                  </Button>
-                </div>
-              )}
+              <Pagination page={page} pageCount={pageCount} onChange={goToPage} className="pt-1" />
             </div>
           )}
         </>
