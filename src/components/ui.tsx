@@ -1,4 +1,4 @@
-import { ChevronDown, LoaderCircle } from 'lucide-react'
+import { LoaderCircle } from 'lucide-react'
 import { useEffect, useId, useRef, type ComponentProps, type ReactNode } from 'react'
 import { Link } from 'react-router'
 import type { WordStatus } from '../lib/srs'
@@ -154,18 +154,7 @@ export function Textarea({ className, ...props }: ComponentProps<'textarea'>) {
   return <textarea className={cn(fieldClass, 'min-h-24 py-2.5 text-sm leading-relaxed', className)} {...props} />
 }
 
-/** className áp dụng cho khung bao ngoài để điều chỉnh độ rộng */
-export function Select({ className, ...props }: ComponentProps<'select'>) {
-  return (
-    <div className={cn('relative', className)}>
-      <select className={cn(fieldClass, 'h-11 cursor-pointer appearance-none pr-9 text-sm font-medium')} {...props} />
-      <ChevronDown
-        aria-hidden
-        className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted"
-      />
-    </div>
-  )
-}
+export { Select, type SelectOption } from './Select'
 
 export function Field({
   label,

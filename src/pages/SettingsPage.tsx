@@ -336,18 +336,21 @@ export default function SettingsPage() {
             </Field>
 
             <Field
-              label={`Mục tiêu ghi nhớ · ${Math.round(settings.requestRetention * 100)}%`}
+              label="Mục tiêu ghi nhớ"
+              htmlFor="retention-select"
               hint="Mục tiêu càng cao thì lịch ôn càng dày để giữ tỉ lệ nhớ."
             >
               <Select
+                id="retention-select"
                 value={settings.requestRetention}
-                onChange={(e) => update({ requestRetention: Number(e.target.value) })}
-              >
-                <option value={0.8}>80% — ôn ít, tiết kiệm thời gian</option>
-                <option value={0.85}>85% — cân bằng</option>
-                <option value={0.9}>90% — khuyên dùng (chuẩn FSRS)</option>
-                <option value={0.95}>95% — ghi nhớ rất chắc</option>
-              </Select>
+                onChange={(v) => update({ requestRetention: v })}
+                options={[
+                  { value: 0.8, label: '80%', description: 'Ôn ít, tiết kiệm thời gian' },
+                  { value: 0.85, label: '85%', description: 'Cân bằng' },
+                  { value: 0.9, label: '90%', description: 'Khuyên dùng — chuẩn FSRS' },
+                  { value: 0.95, label: '95%', description: 'Ghi nhớ rất chắc, ôn dày hơn' },
+                ]}
+              />
             </Field>
           </div>
         </div>
@@ -377,20 +380,23 @@ export default function SettingsPage() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Giọng đọc của thiết bị" hint="Giọng máy (TTS) đã cài trên thiết bị của bạn.">
+            <Field
+              label="Giọng đọc của thiết bị"
+              htmlFor="voice-select"
+              hint="Giọng máy (TTS) đã cài trên thiết bị của bạn."
+            >
               <div className="flex gap-2">
                 <Select
+                  id="voice-select"
                   value={settings.voiceURI}
-                  onChange={(e) => update({ voiceURI: e.target.value })}
+                  onChange={(v) => update({ voiceURI: v })}
+                  placeholder="Mặc định của hệ thống"
                   className="min-w-0 flex-1"
-                >
-                  <option value="">Mặc định của hệ thống</option>
-                  {voices.map((v) => (
-                    <option key={v.voiceURI} value={v.voiceURI}>
-                      {v.name} ({v.lang})
-                    </option>
-                  ))}
-                </Select>
+                  options={[
+                    { value: '', label: 'Mặc định của hệ thống' },
+                    ...voices.map((v) => ({ value: v.voiceURI, label: v.name, meta: v.lang })),
+                  ]}
+                />
                 <Button type="button" variant="secondary" onClick={handleTestVoice} title="Nghe thử giọng đọc" className="h-11">
                   <Play className="size-4" /> Thử
                 </Button>

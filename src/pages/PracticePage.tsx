@@ -11,7 +11,12 @@ import {
   PenLine,
   Plus,
   RefreshCw,
+  Layers,
   SlidersHorizontal,
+  Sprout,
+  Tags,
+  Trophy,
+  TriangleAlert,
   Sparkles,
   TextCursorInput,
 } from 'lucide-react'
@@ -42,6 +47,7 @@ import { cn } from '../lib/cn'
 import { formatDuration } from '../lib/date'
 import { newId } from '../lib/id'
 import { PRACTICE_MODE_INFO } from '../lib/labels'
+import { countTags } from '../lib/tags'
 import { shuffle } from '../lib/random'
 
 type ExtendedMode = PracticeMode | 'mixed'
@@ -116,10 +122,7 @@ export default function PracticePage() {
   const [sessionStartTime, setSessionStartTime] = useState<number>(0)
   const [summary, setSummary] = useState<PracticeSummary | null>(null)
 
-  const allTags = useMemo(() => {
-    if (!words) return []
-    return [...new Set(words.flatMap((w) => w.tags))].sort((a, b) => a.localeCompare(b, 'vi'))
-  }, [words])
+  const tagCounts = useMemo(() => countTags(words), [words])
 
   const startSession = (customWords?: Word[]) => {
     if (words.length === 0) return
@@ -444,37 +447,44 @@ export default function PracticePage() {
             />
             <div className="mt-5 grid gap-4 sm:grid-cols-3">
               <Field label="Chủ đề / Nhãn" htmlFor="tag-filter">
-                <Select id="tag-filter" value={selectedTag} onChange={(e) => setSelectedTag(e.target.value)}>
-                  <option value="all">Tất cả nhãn ({words.length} từ)</option>
-                  {allTags.map((t) => (
-                    <option key={t} value={t}>
-                      #{t}
-                    </option>
-                  ))}
-                </Select>
+                <Select
+                  id="tag-filter"
+                  value={selectedTag}
+                  onChange={setSelectedTag}
+                  options={[
+                    { value: 'all', label: 'Tất cả nhãn', icon: <Tags />, meta: `${words.length} từ` },
+                    ...tagCounts.map((t) => ({ value: t.tag, label: `#${t.tag}`, meta: `${t.count} từ` })),
+                  ]}
+                />
               </Field>
 
               <Field label="Nhóm từ vựng" htmlFor="subset-filter">
                 <Select
                   id="subset-filter"
                   value={selectedSubset}
-                  onChange={(e) => setSelectedSubset(e.target.value as typeof selectedSubset)}
-                >
-                  <option value="all">Tất cả từ</option>
-                  <option value="lapses">Từ hay quên nhất</option>
-                  <option value="new">Từ mới thêm</option>
-                  <option value="mature">Từ đã thuộc</option>
-                </Select>
+                  onChange={setSelectedSubset}
+                  options={[
+                    { value: 'all', label: 'Tất cả từ', icon: <Layers /> },
+                    { value: 'lapses', label: 'Hay quên', description: 'Từng bấm “Quên” ít nhất một lần', icon: <TriangleAlert /> },
+                    { value: 'new', label: 'Từ mới', description: 'Chưa ôn lần nào', icon: <Sprout /> },
+                    { value: 'mature', label: 'Đã thuộc', description: 'Đang ôn theo chu kỳ dài', icon: <Trophy /> },
+                  ]}
+                />
               </Field>
 
               <Field label="Số lượng câu hỏi" htmlFor="limit-select">
-                <Select id="limit-select" value={limit} onChange={(e) => setLimit(Number(e.target.value))}>
-                  <option value={10}>10 câu</option>
-                  <option value={20}>20 câu</option>
-                  <option value={50}>50 câu</option>
-                  <option value={100}>100 câu</option>
-                  <option value={9999}>Tất cả từ</option>
-                </Select>
+                <Select
+                  id="limit-select"
+                  value={limit}
+                  onChange={setLimit}
+                  options={[
+                    { value: 10, label: '10 câu' },
+                    { value: 20, label: '20 câu' },
+                    { value: 50, label: '50 câu' },
+                    { value: 100, label: '100 câu' },
+                    { value: 9999, label: 'Tất cả từ', meta: `${words.length} câu` },
+                  ]}
+                />
               </Field>
             </div>
           </div>

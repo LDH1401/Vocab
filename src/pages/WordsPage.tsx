@@ -1,4 +1,17 @@
-import { BookOpen, ChevronRight, Clock, Plus, Search, X } from 'lucide-react'
+import {
+  ArrowDownAZ,
+  BookOpen,
+  CalendarClock,
+  ChevronRight,
+  Clock,
+  History,
+  Plus,
+  RotateCcw,
+  Search,
+  Sparkles,
+  Tags,
+  X,
+} from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { SpeakButton } from '../components/SpeakButton'
@@ -19,6 +32,7 @@ import type { CardRecord, Word } from '../db/types'
 import { useSettings } from '../hooks/useSettings'
 import { formatDue } from '../lib/date'
 import { posInfo, STATUS_LABELS } from '../lib/labels'
+import { countTags } from '../lib/tags'
 import { wordStatus, type WordStatus } from '../lib/srs'
 import { foldText } from '../lib/text'
 import { State } from 'ts-fsrs'
@@ -73,10 +87,7 @@ export default function WordsPage() {
     })
   }, [data, settings.enabledCardTypes])
 
-  const allTags = useMemo(
-    () => [...new Set(data.words.flatMap((w) => w.tags))].sort((a, b) => a.localeCompare(b, 'vi')),
-    [data.words],
-  )
+  const tagCounts = useMemo(() => countTags(data.words), [data.words])
 
   const filtered = useMemo(() => {
     const q = foldText(query.trim())
@@ -168,33 +179,31 @@ export default function WordsPage() {
               />
 
               <div className="flex flex-1 items-center justify-end gap-2">
-                {allTags.length > 0 && (
+                {tagCounts.length > 0 && (
                   <Select
                     value={tag}
-                    onChange={(e) => setParam('tag', e.target.value, '')}
-                    aria-label="Lọc theo tag"
-                    className="min-w-0 flex-1 sm:w-40 sm:flex-none"
-                  >
-                    <option value="">Tất cả nhãn</option>
-                    {allTags.map((t) => (
-                      <option key={t} value={t}>
-                        #{t}
-                      </option>
-                    ))}
-                  </Select>
+                    onChange={(v) => setParam('tag', v, '')}
+                    aria-label="Lọc theo nhãn"
+                    className="min-w-0 flex-1 sm:w-44 sm:flex-none"
+                    options={[
+                      { value: '', label: 'Tất cả nhãn', icon: <Tags />, meta: String(rows.length) },
+                      ...tagCounts.map((t) => ({ value: t.tag, label: `#${t.tag}`, meta: String(t.count) })),
+                    ]}
+                  />
                 )}
-                <Select
+                <Select<Sort>
                   value={sort}
-                  onChange={(e) => setParam('sort', e.target.value, 'newest')}
+                  onChange={(v) => setParam('sort', v, 'newest')}
                   aria-label="Sắp xếp"
-                  className="min-w-0 flex-1 sm:w-44 sm:flex-none"
-                >
-                  <option value="newest">Mới thêm trước</option>
-                  <option value="oldest">Cũ nhất trước</option>
-                  <option value="az">Theo thứ tự A → Z</option>
-                  <option value="due">Sắp đến hạn ôn</option>
-                  <option value="lapses">Hay quên nhất</option>
-                </Select>
+                  className="min-w-0 flex-1 sm:w-48 sm:flex-none"
+                  options={[
+                    { value: 'newest', label: 'Mới thêm trước', icon: <Sparkles /> },
+                    { value: 'oldest', label: 'Cũ nhất trước', icon: <History /> },
+                    { value: 'az', label: 'Theo A → Z', icon: <ArrowDownAZ /> },
+                    { value: 'due', label: 'Sắp đến hạn ôn', icon: <CalendarClock /> },
+                    { value: 'lapses', label: 'Hay quên nhất', icon: <RotateCcw /> },
+                  ]}
+                />
               </div>
             </div>
           </div>

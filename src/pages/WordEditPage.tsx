@@ -43,7 +43,7 @@ import { addWord, deleteWord, findWordsByTerm, resetWordProgress, updateWord } f
 import { useSettings } from '../hooks/useSettings'
 import { formatDate, formatDue } from '../lib/date'
 import { lookupWord, pickPhonetic } from '../lib/dictionary'
-import { CARD_TYPE_INFO, PARTS_OF_SPEECH } from '../lib/labels'
+import { CARD_TYPE_INFO, PARTS_OF_SPEECH, posInfo } from '../lib/labels'
 import { pronounce } from '../lib/speech'
 import { wordStatus } from '../lib/srs'
 import { suggestVietnamese } from '../lib/translate'
@@ -419,19 +419,20 @@ export default function WordEditPage() {
               />
             </Field>
 
-            <Field label="Từ loại">
+            <Field label="Từ loại" htmlFor="pos-select">
               <Select
+                id="pos-select"
                 value={form.partOfSpeech}
-                onChange={(e) => updateField('partOfSpeech', e.target.value)}
-                aria-label="Loại từ"
-              >
-                <option value="">(Chưa chọn)</option>
-                {PARTS_OF_SPEECH.map((p) => (
-                  <option key={p.value} value={p.value}>
-                    {p.label} ({p.short})
-                  </option>
-                ))}
-              </Select>
+                onChange={(v) => updateField('partOfSpeech', v)}
+                options={[
+                  { value: '', label: 'Chưa chọn' },
+                  ...PARTS_OF_SPEECH.map((p) => ({ value: p.value, label: p.label, meta: p.short })),
+                  // Từ loại lạ lấy từ từ điển vẫn được hiện thay vì bị trống
+                  ...(form.partOfSpeech && !PARTS_OF_SPEECH.some((p) => p.value === form.partOfSpeech)
+                    ? [{ value: form.partOfSpeech, label: posInfo(form.partOfSpeech).label }]
+                    : []),
+                ]}
+              />
             </Field>
           </div>
 
@@ -523,16 +524,18 @@ export default function WordEditPage() {
             description="Từ đồng nghĩa, nhãn chủ đề và mẹo ghi nhớ của riêng bạn."
           />
 
-          <Field label="Từ đồng nghĩa" hint="Gõ rồi nhấn Enter hoặc dấu phẩy để thêm">
+          <Field label="Từ đồng nghĩa" htmlFor="synonyms-input" hint="Gõ rồi nhấn Enter hoặc dấu phẩy để thêm">
             <TagInput
+              id="synonyms-input"
               value={form.synonyms}
               onChange={(syns) => updateField('synonyms', syns)}
               placeholder="e.g. robust, durable, tough"
             />
           </Field>
 
-          <Field label="Nhãn / Chủ đề (Tag)" hint="Phân loại theo bộ đề (IELTS, TOEIC, Kinh tế, Giao tiếp...)">
+          <Field label="Nhãn / Chủ đề (Tag)" htmlFor="tags-input" hint="Phân loại theo bộ đề (IELTS, TOEIC, Kinh tế, Giao tiếp...)">
             <TagInput
+              id="tags-input"
               value={form.tags}
               onChange={(tags) => updateField('tags', tags)}
               suggestions={allTags}
