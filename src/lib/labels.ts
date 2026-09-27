@@ -32,6 +32,7 @@ export const STATUS_LABELS: Record<WordStatus, string> = {
 
 export const PARTS_OF_SPEECH = [
   { value: 'noun', label: 'Danh từ', short: 'n' },
+  { value: 'noun plural', label: 'Danh từ số nhiều', short: 'n pl' },
   { value: 'verb', label: 'Động từ', short: 'v' },
   { value: 'adjective', label: 'Tính từ', short: 'adj' },
   { value: 'adverb', label: 'Trạng từ', short: 'adv' },
