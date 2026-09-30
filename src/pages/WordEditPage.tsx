@@ -18,7 +18,6 @@ import {
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { toast } from 'sonner'
-import { SpeakButton } from '../components/SpeakButton'
 import { ExampleSentence } from '../components/WordDetails'
 import { TagInput } from '../components/TagInput'
 import {
@@ -437,19 +436,6 @@ export default function WordEditPage() {
           </div>
 
           {/* Audio URL */}
-          <Field label="File phát âm trực tiếp (Audio URL)" hint="Tự điền khi tra từ điển để có phát âm chuẩn từ người bản ngữ">
-            <div className="flex gap-2">
-              <Input
-                value={form.audioUrl}
-                onChange={(e) => updateField('audioUrl', e.target.value)}
-                placeholder="https://...mp3"
-                className="font-mono text-xs"
-              />
-              {form.audioUrl && (
-                <SpeakButton text={form.term} audioUrl={form.audioUrl} settings={settings} />
-              )}
-            </div>
-          </Field>
         </Card>
 
         {/* Section 2: Examples & Definition */}

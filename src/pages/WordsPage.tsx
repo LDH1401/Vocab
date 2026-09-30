@@ -5,6 +5,7 @@ import {
   ChevronRight,
   Clock,
   History,
+  PencilLine,
   Plus,
   RotateCcw,
   Search,
@@ -12,12 +13,14 @@ import {
   Tags,
   X,
 } from 'lucide-react'
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { Pagination } from '../components/Pagination'
+import { RenameTagDialog } from '../components/RenameTagDialog'
 import { SpeakButton } from '../components/SpeakButton'
 import {
   Badge,
+  Button,
   ButtonLink,
   Card,
   EmptyState,
@@ -54,6 +57,7 @@ export default function WordsPage() {
   const settings = useSettings()
   const [params, setParams] = useSearchParams()
   const listTopRef = useRef<HTMLDivElement>(null)
+  const [renamingTags, setRenamingTags] = useState(false)
   const query = params.get('q') ?? ''
   const status = (params.get('status') ?? 'all') as StatusFilter
   const tag = params.get('tag') ?? ''
@@ -136,9 +140,16 @@ export default function WordsPage() {
         title="Kho từ vựng"
         description={`${rows.length} từ trong sổ tay của bạn`}
         actions={
-          <ButtonLink to="/words/new" variant="primary">
-            <Plus className="size-4.5" /> Thêm từ mới
-          </ButtonLink>
+          <>
+            {tagCounts.length > 0 && (
+              <Button variant="secondary" onClick={() => setRenamingTags(true)}>
+                <PencilLine className="size-4" /> Đổi tên nhãn
+              </Button>
+            )}
+            <ButtonLink to="/words/new" variant="primary">
+              <Plus className="size-4.5" /> Thêm từ mới
+            </ButtonLink>
+          </>
         }
       />
 
@@ -308,6 +319,16 @@ export default function WordsPage() {
           )}
         </>
       )}
+      <RenameTagDialog
+        open={renamingTags}
+        onClose={() => setRenamingTags(false)}
+        tags={tagCounts}
+        initialTag={tag}
+        onRenamed={(from, to) => {
+          // Đang lọc theo nhãn vừa đổi tên thì giữ nguyên bộ lọc với tên mới
+          if (tag === from) setParam('tag', to, '')
+        }}
+      />
     </div>
   )
 }

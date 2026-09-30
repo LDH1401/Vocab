@@ -1,5 +1,6 @@
 import { canCloze } from '../lib/cloze'
 import { newId } from '../lib/id'
+import { uniq } from '../lib/text'
 import { createCard, resetCard } from '../lib/srs'
 import type { CardRecord, CardType, Word, WordInput } from './types'
 import { getSettings } from './settings'
@@ -71,4 +72,24 @@ export async function findWordsByTerm(term: string): Promise<Word[]> {
   const q = term.trim().toLowerCase()
   if (!q) return []
   return getData().words.filter((w) => w.term.toLowerCase() === q)
+}
+
+/**
+ * Đổi tên một nhãn trên mọi từ đang dùng nó. Tên mới trùng một nhãn khác thì hai nhãn được gộp làm một.
+ * Chờ đến khi dữ liệu đã lưu lên server, trả về số từ bị ảnh hưởng.
+ */
+export async function renameTag(from: string, to: string): Promise<number> {
+  const target = to.trim()
+  if (!from || !target || target === from) return 0
+  const { words } = getData()
+  // Trùng tên một nhãn đã có (không phân biệt hoa thường) thì lấy đúng cách viết của nhãn đó,
+  // tránh để lại hai nhãn chỉ khác chữ hoa như "Academic" và "academic"
+  const existing = words.flatMap((w) => w.tags).find((t) => t !== from && t.toLowerCase() === target.toLowerCase())
+  const name = existing ?? target
+  const now = Date.now()
+  const docs = words
+    .filter((w) => w.tags.includes(from))
+    .map((w) => ({ ...w, tags: uniq(w.tags.map((t) => (t === from ? name : t))), updatedAt: now }))
+  await commit([{ type: 'put', collection: 'words', docs }])
+  return docs.length
 }
