@@ -5,7 +5,7 @@ import {
   ChevronRight,
   Clock,
   History,
-  PencilLine,
+  Tag as TagIcon,
   Plus,
   RotateCcw,
   Search,
@@ -16,7 +16,7 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { Pagination } from '../components/Pagination'
-import { RenameTagDialog } from '../components/RenameTagDialog'
+import { TagManagerDialog } from '../components/TagManagerDialog'
 import { SpeakButton } from '../components/SpeakButton'
 import {
   Badge,
@@ -58,7 +58,7 @@ export default function WordsPage() {
   const settings = useSettings()
   const [params, setParams] = useSearchParams()
   const listTopRef = useRef<HTMLDivElement>(null)
-  const [renamingTags, setRenamingTags] = useState(false)
+  const [managingTags, setManagingTags] = useState(false)
   const query = params.get('q') ?? ''
   const status = (params.get('status') ?? 'all') as StatusFilter
   const tag = params.get('tag') ?? ''
@@ -180,8 +180,8 @@ export default function WordsPage() {
         actions={
           <>
             {tagCounts.length > 0 && (
-              <Button variant="secondary" onClick={() => setRenamingTags(true)}>
-                <PencilLine className="size-4" /> Đổi tên nhãn
+              <Button variant="secondary" onClick={() => setManagingTags(true)}>
+                <TagIcon className="size-4" /> Quản lý nhãn
               </Button>
             )}
             <ButtonLink to="/words/new" variant="primary">
@@ -357,14 +357,18 @@ export default function WordsPage() {
           )}
         </>
       )}
-      <RenameTagDialog
-        open={renamingTags}
-        onClose={() => setRenamingTags(false)}
+      <TagManagerDialog
+        open={managingTags}
+        onClose={() => setManagingTags(false)}
         tags={tagCounts}
         initialTag={tag}
         onRenamed={(from, to) => {
           // Đang lọc theo nhãn vừa đổi tên thì giữ nguyên bộ lọc với tên mới
           if (tag === from) setParam('tag', to, '')
+        }}
+        onDeleted={(deleted) => {
+          // Nhãn đang lọc bị xóa thì quay về xem tất cả
+          if (tag === deleted) setParam('tag', '', '')
         }}
       />
     </div>

@@ -1,28 +1,31 @@
-import { Merge, PencilLine } from 'lucide-react'
+import { Merge, PencilLine, Trash2, TriangleAlert } from 'lucide-react'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import { toast } from 'sonner'
-import { renameTag } from '../db/words'
+import { deleteTag, renameTag } from '../db/words'
 import { errorMessage } from '../lib/api'
 import type { TagCount } from '../lib/tags'
 import { Button, Dialog, Field, Input, Select, Spinner } from './ui'
 
-/** Đổi tên một nhãn cho toàn bộ từ đang mang nhãn đó */
-export function RenameTagDialog({
+/** Đổi tên hoặc xóa một nhãn, áp dụng cho mọi từ đang mang nhãn đó */
+export function TagManagerDialog({
   open,
   onClose,
   tags,
   initialTag,
   onRenamed,
+  onDeleted,
 }: {
   open: boolean
   onClose: () => void
   tags: TagCount[]
   initialTag?: string
   onRenamed?: (from: string, to: string) => void
+  onDeleted?: (tag: string) => void
 }) {
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
-  const [saving, setSaving] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const wasOpen = useRef(false)
 
   // Đặt lại các ô mỗi lần mở hộp thoại (không đụng vào khi người dùng đang gõ)
@@ -31,6 +34,7 @@ export function RenameTagDialog({
       const tag = initialTag && tags.some((t) => t.tag === initialTag) ? initialTag : (tags[0]?.tag ?? '')
       setFrom(tag)
       setTo(tag)
+      setConfirmingDelete(false)
     }
     wasOpen.current = open
   }, [open, initialTag, tags])
@@ -38,11 +42,11 @@ export function RenameTagDialog({
   const target = to.trim()
   const count = tags.find((t) => t.tag === from)?.count ?? 0
   const mergesInto = tags.find((t) => t.tag !== from && t.tag.toLowerCase() === target.toLowerCase())
-  const canSave = Boolean(from) && target !== '' && target !== from && !saving
+  const canRename = Boolean(from) && target !== '' && target !== from && !busy
 
   const save = async () => {
-    if (!canSave) return
-    setSaving(true)
+    if (!canRename) return
+    setBusy(true)
     try {
       const changed = await renameTag(from, target)
       toast.success(
@@ -55,7 +59,22 @@ export function RenameTagDialog({
     } catch (err) {
       toast.error('Không đổi được tên nhãn', { description: errorMessage(err) })
     } finally {
-      setSaving(false)
+      setBusy(false)
+    }
+  }
+
+  const remove = async () => {
+    if (!from || busy) return
+    setBusy(true)
+    try {
+      const changed = await deleteTag(from)
+      toast.success(`Đã xóa nhãn “${from}” khỏi ${changed} từ.`)
+      onDeleted?.(from)
+      onClose()
+    } catch (err) {
+      toast.error('Không xóa được nhãn', { description: errorMessage(err) })
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -66,26 +85,54 @@ export function RenameTagDialog({
     }
   }
 
+  if (confirmingDelete) {
+    return (
+      <Dialog
+        open={open}
+        onClose={onClose}
+        title="Xóa nhãn"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setConfirmingDelete(false)} disabled={busy}>
+              Quay lại
+            </Button>
+            <Button variant="danger" onClick={remove} disabled={busy}>
+              {busy ? <Spinner /> : <Trash2 className="size-4" />} Xóa nhãn
+            </Button>
+          </>
+        }
+      >
+        <p className="flex items-start gap-2 rounded-xl border border-critical/25 bg-critical-wash px-3.5 py-2.5 text-[13px] text-ink">
+          <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-critical-ink" />
+          <span>
+            Nhãn <strong className="font-semibold">“{from}”</strong> sẽ bị bỏ khỏi {count} từ. Các từ vựng vẫn còn
+            nguyên cùng tiến độ học, chỉ mất nhãn này.
+          </span>
+        </p>
+      </Dialog>
+    )
+  }
+
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      title="Đổi tên nhãn"
+      title="Quản lý nhãn"
       footer={
         <>
-          <Button variant="ghost" onClick={onClose} disabled={saving}>
-            Hủy
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
+            Đóng
           </Button>
-          <Button variant="primary" onClick={save} disabled={!canSave}>
-            {saving ? <Spinner /> : <PencilLine className="size-4" />} Đổi tên
+          <Button variant="primary" onClick={save} disabled={!canRename}>
+            {busy ? <Spinner /> : <PencilLine className="size-4" />} Đổi tên
           </Button>
         </>
       }
     >
       <div className="space-y-4">
-        <Field label="Nhãn cần đổi" htmlFor="rename-tag-from">
+        <Field label="Nhãn" htmlFor="manage-tag-from">
           <Select
-            id="rename-tag-from"
+            id="manage-tag-from"
             value={from}
             onChange={(v) => {
               setFrom(v)
@@ -97,11 +144,11 @@ export function RenameTagDialog({
 
         <Field
           label="Tên mới"
-          htmlFor="rename-tag-to"
+          htmlFor="manage-tag-to"
           hint={count > 0 ? `Áp dụng cho ${count} từ đang mang nhãn này.` : undefined}
         >
           <Input
-            id="rename-tag-to"
+            id="manage-tag-to"
             value={to}
             onChange={(e) => setTo(e.target.value)}
             onKeyDown={onKeyDown}
@@ -116,6 +163,13 @@ export function RenameTagDialog({
             Đã có nhãn “{mergesInto.tag}”. Hai nhãn sẽ được gộp làm một, từ nào có cả hai chỉ còn lại một nhãn.
           </p>
         )}
+
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-4">
+          <p className="text-[13px] text-ink-2">Không dùng nhãn này nữa?</p>
+          <Button variant="danger" size="sm" onClick={() => setConfirmingDelete(true)} disabled={!from || busy}>
+            <Trash2 className="size-4" /> Xóa nhãn
+          </Button>
+        </div>
       </div>
     </Dialog>
   )

@@ -93,3 +93,17 @@ export async function renameTag(from: string, to: string): Promise<number> {
   await commit([{ type: 'put', collection: 'words', docs }])
   return docs.length
 }
+
+/**
+ * Bỏ một nhãn khỏi mọi từ đang mang nó. Từ vựng vẫn giữ nguyên, chỉ mất nhãn.
+ * Chờ đến khi dữ liệu đã lưu lên server, trả về số từ bị ảnh hưởng.
+ */
+export async function deleteTag(tag: string): Promise<number> {
+  if (!tag) return 0
+  const now = Date.now()
+  const docs = getData()
+    .words.filter((w) => w.tags.includes(tag))
+    .map((w) => ({ ...w, tags: w.tags.filter((t) => t !== tag), updatedAt: now }))
+  await commit([{ type: 'put', collection: 'words', docs }])
+  return docs.length
+}
