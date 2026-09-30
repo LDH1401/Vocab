@@ -13,7 +13,7 @@ import {
   Tags,
   X,
 } from 'lucide-react'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { Pagination } from '../components/Pagination'
 import { RenameTagDialog } from '../components/RenameTagDialog'
@@ -40,6 +40,7 @@ import { wordStatus, type WordStatus } from '../lib/srs'
 import { foldText } from '../lib/text'
 import { State } from 'ts-fsrs'
 
+const SEARCH_DEBOUNCE_MS = 250
 const PAGE_SIZES = [20, 50, 100] as const
 const DEFAULT_PAGE_SIZE = 20
 
@@ -73,6 +74,43 @@ export default function WordsPage() {
     else next.set(key, value)
     next.delete('page')
     setParams(next, { replace: true })
+  }
+
+  /**
+   * Ô tìm kiếm giữ chữ ngay trong state của nó rồi mới ghi lên URL sau khi ngừng gõ.
+   * Nếu lấy thẳng giá trị từ URL, React ghi đè ô nhập chậm một nhịp và bộ gõ tiếng Việt bị hỏng
+   * (gõ "kiên" ra "kkikiekiêkiên").
+   */
+  const [searchDraft, setSearchDraft] = useState(query)
+  const pushedQuery = useRef(query)
+  const searchTimer = useRef(0)
+
+  useEffect(() => () => window.clearTimeout(searchTimer.current), [])
+
+  // URL đổi từ nơi khác (nút Quay lại, mở lại trang) thì đồng bộ lại ô tìm kiếm
+  useEffect(() => {
+    if (query !== pushedQuery.current) {
+      pushedQuery.current = query
+      setSearchDraft(query)
+    }
+  }, [query])
+
+  const pushQuery = (value: string, delay: number) => {
+    window.clearTimeout(searchTimer.current)
+    searchTimer.current = window.setTimeout(() => {
+      pushedQuery.current = value
+      setParam('q', value, '')
+    }, delay)
+  }
+
+  const onSearchChange = (value: string) => {
+    setSearchDraft(value)
+    pushQuery(value, SEARCH_DEBOUNCE_MS)
+  }
+
+  const clearSearch = () => {
+    setSearchDraft('')
+    pushQuery('', 0)
   }
 
   /** Mỗi lần chuyển trang là một mục trong lịch sử, nút Quay lại của trình duyệt về trang trước đó */
@@ -178,16 +216,16 @@ export default function WordsPage() {
               <Search className="pointer-events-none absolute top-1/2 left-4 size-4.5 -translate-y-1/2 text-muted" />
               <Input
                 type="search"
-                value={query}
-                onChange={(e) => setParam('q', e.target.value, '')}
+                value={searchDraft}
+                onChange={(e) => onSearchChange(e.target.value)}
                 placeholder="Tìm từ, nghĩa hoặc nhãn…"
                 aria-label="Tìm kiếm"
                 className="h-12 pr-10 pl-11 text-[15px]"
               />
-              {query && (
+              {searchDraft && (
                 <button
                   type="button"
-                  onClick={() => setParam('q', '', '')}
+                  onClick={clearSearch}
                   className="absolute top-1/2 right-3 -translate-y-1/2 rounded-lg p-1 text-muted hover:bg-surface-2 hover:text-ink"
                   aria-label="Xóa ô tìm kiếm"
                 >
