@@ -6,6 +6,7 @@ import {
   Clock,
   History,
   Tag as TagIcon,
+  SquareCheck,
   Plus,
   RotateCcw,
   Search,
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
+import { AddTagsDialog } from '../components/AddTagsDialog'
 import { Pagination } from '../components/Pagination'
 import { TagManagerDialog } from '../components/TagManagerDialog'
 import { SpeakButton } from '../components/SpeakButton'
@@ -33,6 +35,7 @@ import {
 import { useData } from '../db/store'
 import type { CardRecord, Word } from '../db/types'
 import { useSettings } from '../hooks/useSettings'
+import { cn } from '../lib/cn'
 import { formatDue } from '../lib/date'
 import { posInfo, STATUS_LABELS } from '../lib/labels'
 import { countTags } from '../lib/tags'
@@ -40,6 +43,8 @@ import { wordStatus, type WordStatus } from '../lib/srs'
 import { foldText } from '../lib/text'
 import { State } from 'ts-fsrs'
 
+/** Giá trị riêng của bộ lọc nhãn để chọn các từ chưa được gắn nhãn nào */
+const NO_TAG = '__none__'
 const SEARCH_DEBOUNCE_MS = 250
 const PAGE_SIZES = [20, 50, 100] as const
 const DEFAULT_PAGE_SIZE = 20
@@ -59,6 +64,9 @@ export default function WordsPage() {
   const [params, setParams] = useSearchParams()
   const listTopRef = useRef<HTMLDivElement>(null)
   const [managingTags, setManagingTags] = useState(false)
+  const [selecting, setSelecting] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [taggingSelection, setTaggingSelection] = useState(false)
   const query = params.get('q') ?? ''
   const status = (params.get('status') ?? 'all') as StatusFilter
   const tag = params.get('tag') ?? ''
@@ -151,7 +159,7 @@ export default function WordsPage() {
     const result = rows.filter(
       (r) =>
         (status === 'all' || r.status === status) &&
-        (!tag || r.word.tags.includes(tag)) &&
+        (!tag || (tag === NO_TAG ? r.word.tags.length === 0 : r.word.tags.includes(tag))) &&
         (!q || foldText(`${r.word.term} ${r.word.meaning} ${r.word.tags.join(' ')}`).includes(q)),
     )
     const compare: Record<Sort, (a: Row, b: Row) => number> = {
@@ -163,6 +171,26 @@ export default function WordsPage() {
     }
     return result.sort(compare[sort])
   }, [rows, query, status, tag, sort])
+
+  const untaggedCount = useMemo(() => data.words.filter((w) => w.tags.length === 0).length, [data.words])
+
+  // Bỏ chọn những từ không còn nằm trong kết quả lọc (vừa xóa từ, vừa đổi bộ lọc)
+  const visibleIds = useMemo(() => new Set(filtered.map((r) => r.word.id)), [filtered])
+  const selectedIds = useMemo(() => [...selected].filter((id) => visibleIds.has(id)), [selected, visibleIds])
+  const allSelected = selectedIds.length > 0 && selectedIds.length === filtered.length
+
+  const toggleWord = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (!next.delete(id)) next.add(id)
+      return next
+    })
+  }
+
+  const stopSelecting = () => {
+    setSelecting(false)
+    setSelected(new Set())
+  }
 
   // Trang trên URL có thể vượt quá số trang hiện có (vừa xóa từ, đổi bộ lọc) nên được kẹp lại
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize))
@@ -257,6 +285,9 @@ export default function WordsPage() {
                     className="min-w-0 flex-1 sm:w-44 sm:flex-none"
                     options={[
                       { value: '', label: 'Tất cả nhãn', icon: <Tags />, meta: String(rows.length) },
+                      ...(untaggedCount > 0
+                        ? [{ value: NO_TAG, label: 'Chưa có nhãn', icon: <TagIcon />, meta: String(untaggedCount) }]
+                        : []),
                       ...tagCounts.map((t) => ({ value: t.tag, label: `#${t.tag}`, meta: String(t.count) })),
                     ]}
                   />
@@ -294,7 +325,22 @@ export default function WordsPage() {
                     `${filtered.length} từ`
                   )}
                 </p>
-                <div className="w-32 shrink-0">
+                <div className="flex shrink-0 items-center gap-2">
+                  {selecting ? (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setSelected(allSelected ? new Set() : new Set(filtered.map((r) => r.word.id)))}
+                    >
+                      <SquareCheck className="size-4" />
+                      {allSelected ? 'Bỏ chọn tất cả' : `Chọn tất cả ${filtered.length}`}
+                    </Button>
+                  ) : (
+                    <Button variant="secondary" size="sm" onClick={() => setSelecting(true)}>
+                      <SquareCheck className="size-4" /> Chọn
+                    </Button>
+                  )}
+                  <div className="w-32">
                   <Select
                     size="sm"
                     value={pageSize}
@@ -302,16 +348,15 @@ export default function WordsPage() {
                     aria-label="Số từ mỗi trang"
                     options={PAGE_SIZES.map((size) => ({ value: size, label: `${size} / trang` }))}
                   />
+                  </div>
                 </div>
               </div>
 
               <Card className="divide-y divide-line overflow-hidden">
-                {filtered.slice(pageStart, pageEnd).map((row) => (
-                  <div
-                    key={row.word.id}
-                    className="group relative flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-surface-2/60 sm:px-5 sm:py-4"
-                  >
-                    <Link to={`/words/${row.word.id}`} className="min-w-0 flex-1 after:absolute after:inset-0">
+                {filtered.slice(pageStart, pageEnd).map((row) => {
+                  const isSelected = selected.has(row.word.id)
+                  const info = (
+                    <>
                       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                         <span className="font-display text-lg leading-snug font-semibold text-ink">
                           {row.word.term}
@@ -331,7 +376,32 @@ export default function WordsPage() {
                           ))}
                         </div>
                       )}
-                    </Link>
+                    </>
+                  )
+                  return (
+                  <div
+                    key={row.word.id}
+                    className={cn(
+                      'group relative flex items-center gap-3 px-4 py-3.5 transition-colors sm:px-5 sm:py-4',
+                      isSelected ? 'bg-accent-wash' : 'hover:bg-surface-2/60',
+                    )}
+                  >
+                    {selecting ? (
+                      <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleWord(row.word.id)}
+                          aria-label={`Chọn ${row.word.term}`}
+                          className="size-4.5 shrink-0"
+                        />
+                        <div className="min-w-0 flex-1">{info}</div>
+                      </label>
+                    ) : (
+                      <Link to={`/words/${row.word.id}`} className="min-w-0 flex-1 after:absolute after:inset-0">
+                        {info}
+                      </Link>
+                    )}
 
                     <div className="relative flex shrink-0 items-center gap-1.5 sm:gap-3">
                       <div className="flex flex-col items-end gap-1">
@@ -343,20 +413,58 @@ export default function WordsPage() {
                         )}
                       </div>
                       <SpeakButton text={row.word.term} audioUrl={row.word.audioUrl} settings={settings} />
-                      <ChevronRight
-                        aria-hidden
-                        className="hidden size-4 text-muted transition-transform group-hover:translate-x-0.5 sm:block"
-                      />
+                      {!selecting && (
+                        <ChevronRight
+                          aria-hidden
+                          className="hidden size-4 text-muted transition-transform group-hover:translate-x-0.5 sm:block"
+                        />
+                      )}
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </Card>
+
+              {selecting && (
+                <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+5.75rem)] z-10 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-line bg-surface/90 p-2.5 shadow-float backdrop-blur-xl md:bottom-4">
+                  <p className="px-1.5 text-[13px] font-medium text-ink-2 tabular-nums">
+                    {selectedIds.length > 0 ? (
+                      <>
+                        Đã chọn <span className="font-semibold text-ink">{selectedIds.length}</span> từ
+                      </>
+                    ) : (
+                      'Tích chọn các từ muốn gắn nhãn'
+                    )}
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" onClick={stopSelecting}>
+                      Xong
+                    </Button>
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      disabled={selectedIds.length === 0}
+                      onClick={() => setTaggingSelection(true)}
+                    >
+                      <Tags className="size-4" /> Gắn nhãn
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               <Pagination page={page} pageCount={pageCount} onChange={goToPage} className="pt-1" />
             </div>
           )}
         </>
       )}
+      <AddTagsDialog
+        open={taggingSelection}
+        onClose={() => setTaggingSelection(false)}
+        wordIds={selectedIds}
+        suggestions={tagCounts.map((t) => t.tag)}
+        onDone={stopSelecting}
+      />
+
       <TagManagerDialog
         open={managingTags}
         onClose={() => setManagingTags(false)}

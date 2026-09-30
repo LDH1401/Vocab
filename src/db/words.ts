@@ -107,3 +107,27 @@ export async function deleteTag(tag: string): Promise<number> {
   await commit([{ type: 'put', collection: 'words', docs }])
   return docs.length
 }
+
+/**
+ * Thêm một hoặc nhiều nhãn cho các từ đã chọn. Từ nào đã có sẵn nhãn đó thì bỏ qua.
+ * Chờ đến khi dữ liệu đã lưu lên server, trả về số từ thực sự thay đổi.
+ */
+export async function addTagsToWords(wordIds: string[], tags: string[]): Promise<number> {
+  const names = uniq(tags.map((t) => t.trim()).filter(Boolean))
+  if (wordIds.length === 0 || names.length === 0) return 0
+  const { words } = getData()
+  // Dùng lại đúng cách viết của nhãn đã có để không sinh ra "IELTS" và "ielts" song song
+  const spelling = new Map(words.flatMap((w) => w.tags).map((t) => [t.toLowerCase(), t]))
+  const adding = uniq(names.map((t) => spelling.get(t.toLowerCase()) ?? t))
+  const ids = new Set(wordIds)
+  const now = Date.now()
+  const docs: Word[] = []
+  for (const word of words) {
+    if (!ids.has(word.id)) continue
+    const merged = uniq([...word.tags, ...adding])
+    if (merged.length === word.tags.length) continue
+    docs.push({ ...word, tags: merged, updatedAt: now })
+  }
+  await commit([{ type: 'put', collection: 'words', docs }])
+  return docs.length
+}
