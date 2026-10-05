@@ -1,6 +1,6 @@
 import { Rating, State } from 'ts-fsrs'
 import type { ReviewRecord } from '../db/types'
-import { dayKey, shiftDayKey } from './date'
+import { dayKey } from './date'
 
 export function countByDay(timestamps: Iterable<number>): Map<string, number> {
   const counts = new Map<string, number>()
@@ -9,32 +9,6 @@ export function countByDay(timestamps: Iterable<number>): Map<string, number> {
     counts.set(key, (counts.get(key) ?? 0) + 1)
   }
   return counts
-}
-
-/**
- * Chuỗi ngày học liên tiếp. Hôm nay chưa học thì chuỗi vẫn tính đến hôm qua
- * (chỉ mất chuỗi khi bỏ trọn một ngày).
- */
-export function computeStreak(activeDays: Set<string>, today: string): { current: number; longest: number } {
-  let current = 0
-  let cursor = activeDays.has(today) ? today : shiftDayKey(today, -1)
-  while (activeDays.has(cursor)) {
-    current++
-    cursor = shiftDayKey(cursor, -1)
-  }
-
-  let longest = 0
-  for (const day of activeDays) {
-    if (activeDays.has(shiftDayKey(day, -1))) continue
-    let length = 0
-    let d = day
-    while (activeDays.has(d)) {
-      length++
-      d = shiftDayKey(d, 1)
-    }
-    longest = Math.max(longest, length)
-  }
-  return { current, longest }
 }
 
 /**

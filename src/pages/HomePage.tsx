@@ -16,6 +16,7 @@ import { Link } from 'react-router'
 import { toast } from 'sonner'
 import { StatTile } from '../components/charts/StatTile'
 import { LegacyImport } from '../components/LegacyImport'
+import { StreakLives, StreakRestoreCard } from '../components/StreakRestore'
 import { Button, ButtonLink, Card, IconChip, Input, PageHeader, SectionHeader, Spinner } from '../components/ui'
 import { enrichWordFromDictionary } from '../db/enrich'
 import { useData } from '../db/store'
@@ -23,7 +24,8 @@ import { addWord, findWordsByTerm } from '../db/words'
 import { useDueCounts } from '../hooks/useDueCounts'
 import { useSettings } from '../hooks/useSettings'
 import { dayKey, formatDue } from '../lib/date'
-import { computeStreak, countByDay } from '../lib/stats'
+import { countByDay } from '../lib/stats'
+import { computeStreakState } from '../lib/streak'
 import { sanitizeWordInput } from '../lib/wordData'
 
 const numberFormat = new Intl.NumberFormat('vi-VN')
@@ -108,13 +110,16 @@ function QuickAdd() {
 
 export default function HomePage() {
   const due = useDueCounts()
-  const { words, reviews, practice } = useData()
+  const { words, reviews, practice, settings } = useData()
   const wordCount = words.length
   const activity = useMemo(() => {
     const days = countByDay([...reviews.map((r) => r.reviewedAt), ...practice.map((p) => p.answeredAt)])
     const today = dayKey(Date.now())
-    return { streak: computeStreak(new Set(days.keys()), today), today: days.get(today) ?? 0 }
-  }, [reviews, practice])
+    return {
+      streak: computeStreakState(new Set(days.keys()), new Set(settings.streakFreezes), today),
+      today: days.get(today) ?? 0,
+    }
+  }, [reviews, practice, settings.streakFreezes])
 
   const now = new Date()
 
@@ -126,6 +131,8 @@ export default function HomePage() {
       />
 
       <LegacyImport />
+
+      <StreakRestoreCard streak={activity.streak} />
 
       {/* Khối chính: số thẻ cần ôn */}
       {wordCount === 0 ? (
@@ -206,7 +213,14 @@ export default function HomePage() {
         <StatTile
           label="Chuỗi ngày học"
           value={`${activity.streak.current} ngày`}
-          detail={`Dài nhất ${activity.streak.longest} ngày`}
+          detail={
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <StreakLives lives={activity.streak.lives} />
+              {activity.streak.daysToNextLife > 0
+                ? `+1 mạng sau ${activity.streak.daysToNextLife} ngày`
+                : 'Đã đủ mạng'}
+            </span>
+          }
           icon={<Flame />}
           tone="amber"
         />

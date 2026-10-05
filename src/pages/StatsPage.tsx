@@ -12,6 +12,7 @@ import { ChartCard, DataTable } from '../components/charts/ChartCard'
 import { ActivityHeatmap } from '../components/charts/Heatmap'
 import { StackedBar, type Segment } from '../components/charts/StackedBar'
 import { StatTile } from '../components/charts/StatTile'
+import { StreakLives } from '../components/StreakRestore'
 import { ButtonLink, EmptyState, PageHeader } from '../components/ui'
 import { useData } from '../db/store'
 import type { CardRecord, Word } from '../db/types'
@@ -25,7 +26,8 @@ import {
   shiftDayKey,
 } from '../lib/date'
 import { STATUS_LABELS } from '../lib/labels'
-import { computeStreak, countByDay, trueRetention } from '../lib/stats'
+import { countByDay, trueRetention } from '../lib/stats'
+import { computeStreakState } from '../lib/streak'
 import { State } from 'ts-fsrs'
 
 const numberFormat = new Intl.NumberFormat('vi-VN')
@@ -42,7 +44,7 @@ export default function StatsPage() {
     const reviewTimes = reviews.map((r) => r.reviewedAt)
     const practiceTimes = practice.map((p) => p.answeredAt)
     const activeMap = countByDay([...reviewTimes, ...practiceTimes])
-    const streak = computeStreak(new Set(activeMap.keys()), today)
+    const streak = computeStreakState(new Set(activeMap.keys()), new Set(data.settings.streakFreezes), today)
 
     const thirtyDaysAgo = now - 30 * DAY
     const retention30 = trueRetention(reviews, thirtyDaysAgo)
@@ -236,7 +238,12 @@ export default function StatsPage() {
         <StatTile
           label="Chuỗi ngày học"
           value={`${overall.streak.current} ngày`}
-          detail={`Kỷ lục ${overall.streak.longest} ngày`}
+          detail={
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+              <StreakLives lives={overall.streak.lives} />
+              Kỷ lục {overall.streak.longest} ngày
+            </span>
+          }
           icon={<Flame />}
           tone="amber"
         />

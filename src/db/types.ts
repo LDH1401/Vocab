@@ -89,4 +89,6 @@ export interface Settings {
   speechRate: number
   preferRecordedAudio: boolean
   autoPlayAudio: boolean
+  /** Các ngày (YYYY-MM-DD) đã dùng mạng để bù chuỗi */
+  streakFreezes: string[]
 }
