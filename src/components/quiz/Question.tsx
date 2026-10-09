@@ -25,7 +25,6 @@ export function Question({
   // Chế độ giọng ngẫu nhiên: chốt một giọng cho cả câu hỏi để "Nghe lại" không đổi giọng giữa chừng
   const [accent] = useState(() => resolveAccent(settings.accent))
   const questionSettings = useMemo(() => ({ ...settings, accent }), [settings, accent])
-  const accentHint = settings.accent === 'mixed' ? accent : undefined
 
   let resolved: PracticeMode
   if (mode === 'meaning') {
@@ -42,14 +41,6 @@ export function Question({
     case 'choice':
       return <ChoiceQuestion word={word} pool={pool} settings={questionSettings} footer={footer} />
     default:
-      return (
-        <TypingQuestion
-          word={word}
-          variant={resolved}
-          settings={questionSettings}
-          accentHint={accentHint}
-          footer={footer}
-        />
-      )
+      return <TypingQuestion word={word} variant={resolved} settings={questionSettings} footer={footer} />
   }
 }

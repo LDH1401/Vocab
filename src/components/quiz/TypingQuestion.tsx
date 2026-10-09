@@ -1,6 +1,6 @@
 import { Lightbulb, Snail, Volume2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import type { Accent, Settings, Word } from '../../db/types'
+import type { Settings, Word } from '../../db/types'
 import {
   acceptedAnswers,
   checkAnswer,
@@ -12,7 +12,7 @@ import {
   type Verdict,
 } from '../../lib/answer'
 import { findClozes, maskTerm } from '../../lib/cloze'
-import { ACCENT_INFO, posInfo } from '../../lib/labels'
+import { posInfo } from '../../lib/labels'
 import { pronounce } from '../../lib/speech'
 import { buttonClass } from '../styles'
 import { Button, Input } from '../ui'
@@ -33,14 +33,11 @@ export function TypingQuestion({
   word,
   variant: requested,
   settings,
-  accentHint,
   footer,
 }: {
   word: Word
   variant: TypingVariant
   settings: Settings
-  /** Đang luyện giọng ngẫu nhiên: cho biết câu này đọc bằng giọng nào */
-  accentHint?: Accent
   footer: (result: AnswerResult) => ReactNode
 }) {
   // Chọn ngẫu nhiên một câu ví dụ có chứa từ; không còn câu phù hợp thì chuyển sang gõ từ theo nghĩa
@@ -135,11 +132,6 @@ export function TypingQuestion({
                 <Snail className="size-5" />
               </button>
             </div>
-          )}
-          {variant === 'dictation' && accentHint && (
-            <p className="rounded-full border border-line bg-surface-2 px-2.5 py-0.5 text-xs font-medium text-ink-2">
-              {ACCENT_INFO[accentHint].flag} Giọng {ACCENT_INFO[accentHint].short}
-            </p>
           )}
           {variant === 'cloze' && cloze && (
             <>
