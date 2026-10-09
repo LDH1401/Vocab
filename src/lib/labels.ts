@@ -1,5 +1,5 @@
 import { Rating, type Grade } from 'ts-fsrs'
-import type { CardType, PracticeMode } from '../db/types'
+import type { Accent, CardType, PracticeMode } from '../db/types'
 import type { WordStatus } from './srs'
 
 export const CARD_TYPE_INFO: Record<CardType, { name: string; description: string }> = {
@@ -15,6 +15,13 @@ export const PRACTICE_MODE_INFO: Record<PracticeMode, { name: string; descriptio
   spelling: { name: 'Gõ từ theo nghĩa', description: 'Nhìn nghĩa, gõ lại từ tiếng Anh.' },
   dictation: { name: 'Nghe & viết', description: 'Nghe phát âm, gõ lại từ.' },
   cloze: { name: 'Điền vào câu', description: 'Điền từ còn thiếu vào câu ví dụ.' },
+}
+
+export const ACCENT_INFO: Record<Accent, { flag: string; name: string; short: string }> = {
+  'en-US': { flag: '🇺🇸', name: 'Anh – Mỹ', short: 'Mỹ' },
+  'en-GB': { flag: '🇬🇧', name: 'Anh – Anh', short: 'Anh' },
+  'en-AU': { flag: '🇦🇺', name: 'Anh – Úc', short: 'Úc' },
+  'en-CA': { flag: '🇨🇦', name: 'Anh – Canada', short: 'Canada' },
 }
 
 export const GRADE_LABELS: Record<Grade, string> = {

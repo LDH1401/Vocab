@@ -47,7 +47,7 @@ import {
 } from '../db/backup'
 import { updateSettings } from '../db/settings'
 import { hasUnsavedChanges, logout } from '../db/store'
-import { CARD_TYPES, type Accent, type CardType, type MeaningDisplay, type Settings } from '../db/types'
+import { ACCENTS, CARD_TYPES, type AccentPref, type CardType, type MeaningDisplay, type Settings } from '../db/types'
 import { ensureCardsForAllWords } from '../db/words'
 import { useSettings } from '../hooks/useSettings'
 import { setThemePref, useThemePref, type ThemePref } from '../hooks/useTheme'
@@ -56,7 +56,7 @@ import { errorMessage } from '../lib/api'
 import { parseBackup, type Backup } from '../lib/backupFormat'
 import { formatDate, formatDue } from '../lib/date'
 import { cn } from '../lib/cn'
-import { CARD_TYPE_INFO } from '../lib/labels'
+import { ACCENT_INFO, CARD_TYPE_INFO } from '../lib/labels'
 import { speak } from '../lib/speech'
 import { parseWordsCsv } from '../lib/wordData'
 
@@ -366,24 +366,44 @@ export default function SettingsPage() {
             description="Chất giọng, giọng đọc máy và cách phát âm tự động."
           />
 
-          <div className="space-y-2">
-            <p className="text-[13px] font-semibold text-ink">Chất giọng ưu tiên</p>
-            <Segmented<Accent>
-              label="Giọng tiếng Anh"
+          <Field
+            label="Chất giọng"
+            htmlFor="accent-select"
+            hint={
+              <>
+                Đề TOEIC dùng cả 4 giọng: Mỹ, Anh, Úc, Canada. Thiết bị này có giọng máy:{' '}
+                {ACCENTS.filter((a) => voices.some((v) => v.lang.replace('_', '-').toLowerCase() === a.toLowerCase()))
+                  .map((a) => ACCENT_INFO[a].short)
+                  .join(', ') || 'chưa có giọng nào'}
+                . Giọng còn thiếu sẽ dùng file ghi âm từ điển hoặc giọng máy gần nhất.
+              </>
+            }
+          >
+            <Select<AccentPref>
+              id="accent-select"
               value={settings.accent}
               onChange={(val) => update({ accent: val })}
+              className="sm:max-w-sm"
               options={[
-                { value: 'en-US', label: '🇺🇸 Anh – Mỹ' },
-                { value: 'en-GB', label: '🇬🇧 Anh – Anh' },
+                ...ACCENTS.map((a) => ({
+                  value: a,
+                  label: `${ACCENT_INFO[a].flag} ${ACCENT_INFO[a].name}`,
+                  description: a === 'en-CA' ? 'Từ điển không có ghi âm giọng Canada, dùng giọng máy' : undefined,
+                })),
+                {
+                  value: 'mixed' as const,
+                  label: '🔀 Ngẫu nhiên như đề TOEIC',
+                  description: 'Mỗi câu hỏi đọc bằng một trong 4 giọng',
+                },
               ]}
             />
-          </div>
+          </Field>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field
               label="Giọng đọc của thiết bị"
               htmlFor="voice-select"
-              hint="Giọng máy (TTS) đã cài trên thiết bị của bạn."
+              hint="Chỉ dùng khi giọng này đúng chất giọng đang phát; khác giọng thì app tự chọn giọng phù hợp."
             >
               <div className="flex gap-2">
                 <Select

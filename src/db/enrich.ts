@@ -1,10 +1,10 @@
 import { lookupWord, pickPhonetic } from '../lib/dictionary'
-import type { Accent, WordInput } from './types'
+import type { AccentPref, WordInput } from './types'
 import { getData } from './store'
 import { updateWord } from './words'
 
 /** Tra từ điển rồi điền các trường còn trống (dùng cho "Thêm nhanh"). Trả về true nếu có cập nhật. */
-export async function enrichWordFromDictionary(wordId: string, accent: Accent): Promise<boolean> {
+export async function enrichWordFromDictionary(wordId: string, accent: AccentPref): Promise<boolean> {
   const initial = getData().words.find((w) => w.id === wordId)
   if (!initial) return false
   const entry = await lookupWord(initial.term)

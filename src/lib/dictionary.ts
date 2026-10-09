@@ -1,4 +1,4 @@
-import type { Accent } from '../db/types'
+import type { AccentPref } from '../db/types'
 import { withTimeout } from './http'
 import { uniq } from './text'
 
@@ -110,8 +110,9 @@ export async function lookupWord(term: string, signal?: AbortSignal): Promise<Di
 }
 
 /** Chọn phiên âm và file ghi âm theo giọng ưu tiên */
-export function pickPhonetic(entry: DictEntry, accent: Accent): { ipa: string; audio: string } {
-  const want = accent === 'en-GB' ? 'uk' : 'us'
+export function pickPhonetic(entry: DictEntry, accent: AccentPref): { ipa: string; audio: string } {
+  // Giọng Canada và chế độ ngẫu nhiên lấy phiên âm Mỹ làm gốc; khi phát âm sẽ tự đổi sang file đúng giọng
+  const want = accent === 'en-GB' ? 'uk' : accent === 'en-AU' ? 'au' : 'us'
   const withAudio = entry.phonetics.filter((p) => p.audio)
   const audioPick = withAudio.find((p) => p.accent === want) ?? withAudio[0]
   const textPick =

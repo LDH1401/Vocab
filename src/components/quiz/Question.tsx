@@ -1,6 +1,7 @@
-import { useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import type { PracticeMode, Settings, Word } from '../../db/types'
 import { canBuildChoices } from '../../lib/choices'
+import { resolveAccent } from '../../lib/speech'
 import { ChoiceQuestion } from './ChoiceQuestion'
 import { FlipQuestion } from './FlipQuestion'
 import type { AnswerResult } from './result'
@@ -21,6 +22,10 @@ export function Question({
   footer: (result: AnswerResult) => ReactNode
 }) {
   const [coin] = useState(() => Math.random() < 0.5)
+  // Chế độ giọng ngẫu nhiên: chốt một giọng cho cả câu hỏi để "Nghe lại" không đổi giọng giữa chừng
+  const [accent] = useState(() => resolveAccent(settings.accent))
+  const questionSettings = useMemo(() => ({ ...settings, accent }), [settings, accent])
+  const accentHint = settings.accent === 'mixed' ? accent : undefined
 
   let resolved: PracticeMode
   if (mode === 'meaning') {
@@ -33,10 +38,18 @@ export function Question({
 
   switch (resolved) {
     case 'flip':
-      return <FlipQuestion word={word} settings={settings} footer={footer} />
+      return <FlipQuestion word={word} settings={questionSettings} footer={footer} />
     case 'choice':
-      return <ChoiceQuestion word={word} pool={pool} settings={settings} footer={footer} />
+      return <ChoiceQuestion word={word} pool={pool} settings={questionSettings} footer={footer} />
     default:
-      return <TypingQuestion word={word} variant={resolved} settings={settings} footer={footer} />
+      return (
+        <TypingQuestion
+          word={word}
+          variant={resolved}
+          settings={questionSettings}
+          accentHint={accentHint}
+          footer={footer}
+        />
+      )
   }
 }

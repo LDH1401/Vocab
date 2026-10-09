@@ -1,4 +1,4 @@
-import { CARD_TYPES, type Settings } from './types'
+import { ACCENTS, CARD_TYPES, type AccentPref, type Settings } from './types'
 
 export const DEFAULT_SETTINGS: Settings = {
   id: 'app',
@@ -20,8 +20,10 @@ export function normalizeSettings(stored: Partial<Settings> | undefined | null):
   const freezes = Array.isArray(merged.streakFreezes)
     ? [...new Set(merged.streakFreezes.filter((d) => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d)))].sort()
     : []
+  const accents: readonly AccentPref[] = [...ACCENTS, 'mixed']
   return {
     ...merged,
+    accent: accents.includes(merged.accent) ? merged.accent : DEFAULT_SETTINGS.accent,
     enabledCardTypes: types.length > 0 ? types : DEFAULT_SETTINGS.enabledCardTypes,
     streakFreezes: freezes,
   }

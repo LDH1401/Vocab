@@ -76,7 +76,11 @@ export interface PracticeRecord {
 }
 
 export type MeaningDisplay = 'flip' | 'choice' | 'mixed'
-export type Accent = 'en-US' | 'en-GB'
+/** 4 giọng tiếng Anh xuất hiện trong phần Nghe của đề TOEIC */
+export const ACCENTS = ['en-US', 'en-GB', 'en-AU', 'en-CA'] as const
+export type Accent = (typeof ACCENTS)[number]
+/** Giọng ưu tiên: một giọng cố định, hoặc ngẫu nhiên giữa 4 giọng như đề TOEIC */
+export type AccentPref = Accent | 'mixed'
 
 export interface Settings {
   id: 'app'
@@ -84,7 +88,7 @@ export interface Settings {
   newCardsPerDay: number
   requestRetention: number
   meaningDisplay: MeaningDisplay
-  accent: Accent
+  accent: AccentPref
   voiceURI: string
   speechRate: number
   preferRecordedAudio: boolean
