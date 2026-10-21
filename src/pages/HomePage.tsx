@@ -116,10 +116,10 @@ export default function HomePage() {
     const days = countByDay([...reviews.map((r) => r.reviewedAt), ...practice.map((p) => p.answeredAt)])
     const today = dayKey(Date.now())
     return {
-      streak: computeStreakState(new Set(days.keys()), new Set(settings.streakFreezes), today),
+      streak: computeStreakState(new Set(days.keys()), new Set(settings.streakFreezes), today, settings.streakFreezeUsedOn),
       today: days.get(today) ?? 0,
     }
-  }, [reviews, practice, settings.streakFreezes])
+  }, [reviews, practice, settings.streakFreezes, settings.streakFreezeUsedOn])
 
   const now = new Date()
 

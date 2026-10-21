@@ -44,7 +44,12 @@ export default function StatsPage() {
     const reviewTimes = reviews.map((r) => r.reviewedAt)
     const practiceTimes = practice.map((p) => p.answeredAt)
     const activeMap = countByDay([...reviewTimes, ...practiceTimes])
-    const streak = computeStreakState(new Set(activeMap.keys()), new Set(data.settings.streakFreezes), today)
+    const streak = computeStreakState(
+      new Set(activeMap.keys()),
+      new Set(data.settings.streakFreezes),
+      today,
+      data.settings.streakFreezeUsedOn,
+    )
 
     const thirtyDaysAgo = now - 30 * DAY
     const retention30 = trueRetention(reviews, thirtyDaysAgo)

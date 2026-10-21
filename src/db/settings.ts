@@ -1,3 +1,4 @@
+import { dayKey } from '../lib/date'
 import { commit, getData } from './store'
 import type { Settings } from './types'
 import { normalizeSettings } from './settingsDefaults'
@@ -11,7 +12,13 @@ export function getSettings(): Settings {
 /** Dùng mạng để bù những ngày quên học, chờ đến khi đã lưu lên server */
 export async function restoreStreak(days: string[]): Promise<void> {
   const current = getSettings()
-  const next = normalizeSettings({ ...current, streakFreezes: [...current.streakFreezes, ...days] })
+  const today = dayKey(Date.now())
+  const usedOn = { ...current.streakFreezeUsedOn, ...Object.fromEntries(days.map((d) => [d, today])) }
+  const next = normalizeSettings({
+    ...current,
+    streakFreezes: [...current.streakFreezes, ...days],
+    streakFreezeUsedOn: usedOn,
+  })
   await commit([{ type: 'put', collection: 'settings', docs: [next] }])
 }
 

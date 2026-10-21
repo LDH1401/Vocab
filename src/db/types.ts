@@ -95,4 +95,6 @@ export interface Settings {
   autoPlayAudio: boolean
   /** Các ngày (YYYY-MM-DD) đã dùng mạng để bù chuỗi */
   streakFreezes: string[]
+  /** Ngày bù → ngày bấm khôi phục (mạng bị trừ vào ngày bấm, không phải ngày được bù) */
+  streakFreezeUsedOn: Record<string, string>
 }
