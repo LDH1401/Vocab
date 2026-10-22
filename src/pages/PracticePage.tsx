@@ -267,7 +267,7 @@ export default function PracticePage() {
           <Question
             key={`${currentIndex}-${currentItem.word.id}`}
             mode={currentItem.mode}
-            word={currentItem.word}
+            word={words.find((w) => w.id === currentItem.word.id) ?? currentItem.word}
             pool={words}
             settings={settings}
             footer={(result: AnswerResult) => {

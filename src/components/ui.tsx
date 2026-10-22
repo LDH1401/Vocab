@@ -269,12 +269,14 @@ export function Dialog({
   title,
   children,
   footer,
+  wide = false,
 }: {
   open: boolean
   onClose: () => void
   title: ReactNode
   children: ReactNode
   footer?: ReactNode
+  wide?: boolean
 }) {
   const ref = useRef<HTMLDialogElement>(null)
   useEffect(() => {
@@ -291,7 +293,10 @@ export function Dialog({
       onClick={(e) => {
         if (e.target === ref.current) onClose()
       }}
-      className="m-auto w-[min(30rem,calc(100vw-2rem))] rounded-2xl border border-line bg-surface p-0 text-ink shadow-float backdrop:bg-black/50 backdrop:backdrop-blur-[2px] open:animate-fade-up"
+      className={cn(
+        'm-auto rounded-2xl border border-line bg-surface p-0 text-ink shadow-float backdrop:bg-black/50 backdrop:backdrop-blur-[2px] open:animate-fade-up',
+        wide ? 'w-[min(40rem,calc(100vw-2rem))]' : 'w-[min(30rem,calc(100vw-2rem))]',
+      )}
     >
       {open && (
         <div>
@@ -300,7 +305,7 @@ export function Dialog({
             <div className="mt-2 space-y-3 text-sm leading-relaxed text-ink-2">{children}</div>
           </div>
           {footer && (
-            <div className="mt-6 flex flex-wrap justify-end gap-2 border-t border-line bg-surface-2/60 px-6 py-4">
+            <div className="sticky bottom-0 mt-6 flex flex-wrap justify-end gap-2 border-t border-line bg-surface-2 px-6 py-4">
               {footer}
             </div>
           )}

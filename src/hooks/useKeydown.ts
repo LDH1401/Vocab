@@ -10,6 +10,8 @@ export function useKeydown(handler: (e: KeyboardEvent) => void, enabled = true) 
     if (!enabled) return
     const listener = (e: KeyboardEvent) => {
       if (e.repeat || e.isComposing) return
+      // Đang mở hộp thoại thì phím tắt của trang (chấm điểm 1–4, Enter…) không được chạy
+      if (document.querySelector('dialog[open]')) return
       ref.current(e)
     }
     window.addEventListener('keydown', listener)

@@ -1,7 +1,10 @@
+import { PencilLine } from 'lucide-react'
 import { useMemo, useState, type ReactNode } from 'react'
 import type { PracticeMode, Settings, Word } from '../../db/types'
 import { canBuildChoices } from '../../lib/choices'
 import { resolveAccent } from '../../lib/speech'
+import { EditWordDialog } from '../EditWordDialog'
+import { Button } from '../ui'
 import { ChoiceQuestion } from './ChoiceQuestion'
 import { FlipQuestion } from './FlipQuestion'
 import type { AnswerResult } from './result'
@@ -25,6 +28,20 @@ export function Question({
   // Chế độ giọng ngẫu nhiên: chốt một giọng cho cả câu hỏi để "Nghe lại" không đổi giọng giữa chừng
   const [accent] = useState(() => resolveAccent(settings.accent))
   const questionSettings = useMemo(() => ({ ...settings, accent }), [settings, accent])
+  const [editing, setEditing] = useState(false)
+
+  // Trả lời xong mới hiện nút sửa, để không lộ đáp án
+  const footerWithEdit = (result: AnswerResult) => (
+    <>
+      <div className="-mb-2 flex justify-end">
+        <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
+          <PencilLine className="size-4" /> Sửa từ
+        </Button>
+      </div>
+      {footer(result)}
+    </>
+  )
+  const editDialog = <EditWordDialog open={editing} onClose={() => setEditing(false)} word={word} />
 
   let resolved: PracticeMode
   if (mode === 'meaning') {
@@ -35,12 +52,19 @@ export function Question({
   }
   if (resolved === 'choice' && !canBuildChoices(word, pool)) resolved = 'flip'
 
-  switch (resolved) {
-    case 'flip':
-      return <FlipQuestion word={word} settings={questionSettings} footer={footer} />
-    case 'choice':
-      return <ChoiceQuestion word={word} pool={pool} settings={questionSettings} footer={footer} />
-    default:
-      return <TypingQuestion word={word} variant={resolved} settings={questionSettings} footer={footer} />
-  }
+  const question =
+    resolved === 'flip' ? (
+      <FlipQuestion word={word} settings={questionSettings} footer={footerWithEdit} />
+    ) : resolved === 'choice' ? (
+      <ChoiceQuestion word={word} pool={pool} settings={questionSettings} footer={footerWithEdit} />
+    ) : (
+      <TypingQuestion word={word} variant={resolved} settings={questionSettings} footer={footerWithEdit} />
+    )
+
+  return (
+    <>
+      {question}
+      {editDialog}
+    </>
+  )
 }

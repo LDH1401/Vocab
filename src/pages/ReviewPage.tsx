@@ -9,6 +9,7 @@ import { suggestGrade } from '../components/quiz/result'
 import { SessionShell } from '../components/quiz/SessionShell'
 import { Button, ButtonLink, EmptyState, PageSpinner } from '../components/ui'
 import { loadReviewData, saveReview, undoReview, type ReviewData } from '../db/review'
+import { useData } from '../db/store'
 import type { CardRecord } from '../db/types'
 import { hasModifier, isTypingInField, useKeydown } from '../hooks/useKeydown'
 import { formatDue, formatDuration } from '../lib/date'
@@ -71,7 +72,9 @@ export default function ReviewPage() {
     }
   }, [])
 
-  const words = useMemo(() => new Map((data?.words ?? []).map((w) => [w.id, w])), [data])
+  // Lấy từ trong kho đang đồng bộ để sửa từ giữa phiên thì câu hỏi hiện ngay bản mới
+  const live = useData()
+  const words = useMemo(() => new Map(live.words.map((w) => [w.id, w])), [live.words])
 
   const rate = async (grade: Grade) => {
     if (!data || !session?.current || busy) return
@@ -200,7 +203,7 @@ export default function ReviewPage() {
           key={session.turn}
           mode={card.type}
           word={word}
-          pool={data.words}
+          pool={live.words}
           settings={data.settings}
           footer={(result) => (
             <RatingBar
